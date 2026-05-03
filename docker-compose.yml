@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: sll-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: secure-link-locker
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sll-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongo
+    environment:
+      PORT: 5000
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongo:27017/secure-link-locker
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: 7d
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      CLIENT_URL: http://localhost:5173
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: sll-client
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+
+volumes:
+  mongo_data:
